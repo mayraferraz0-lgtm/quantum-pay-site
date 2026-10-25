@@ -15,7 +15,7 @@ app.post('/api/criar-pix', async (req, res) => {
             return res.status(500).json({ success: false, message: "Credenciais em falta nas variáveis de ambiente." });
         }
 
-        // 1. Gerar o token de acesso via Basic Auth (conforme documentação)
+        // 1. Gerar o token de acesso via Basic Auth com o corpo JSON vazio exigido
         const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
         
         const authResponse = await fetch('https://api.quantumpay.com.br/api/auth', {
@@ -23,12 +23,12 @@ app.post('/api/criar-pix', async (req, res) => {
             headers: {
                 'Authorization': `Basic ${credentials}`,
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({})
         });
 
         const authData = await authResponse.json();
 
-        // Se a autenticação falhar, devolvemos a resposta exata da Quantum Pay para diagnóstico
         if (!authResponse.ok || (!authData.token && !authData.accessToken && !authData.data?.token && !authData.data?.accessToken)) {
             return res.status(400).json({ 
                 success: false, 
