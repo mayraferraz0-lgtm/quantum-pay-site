@@ -8,26 +8,54 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/api/criar-pix', async (req, res) => {
     try {
-        const response = await fetch('https://api.quantumpay.com.br/api/v1/pix/in/qrcode', {
+        const apiKey = process.env.API_KEY;
+        const apiSecret = process.env.API_SECRET;
+
+        if (!apiKey || !apiSecret) {
+            return res.status(500).json({ success: false, message: "Credenciais em falta nas variáveis de ambiente." });
+        }
+
+        // 1. Gerar o token de acesso via Basic Auth (conforme documentação da Quantum Pay)
+        const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
+        
+        const authResponse = await fetch('https://api.quantumpay.com.br/api/auth', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${credentials}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const authData = await authResponse.json();
+        const token = authData.token || authData.accessToken || authData.data?.token || authData.data?.accessToken;
+
+        if (!token) {
+            return res.status(400).json({ success: false, message: "Falha na autenticação com a Quantum Pay", details: authData });
+        }
+
+        // 2. Criar a cobrança Pix utilizando o token obtido
+        const pixResponse = await fetch('https://api.quantumpay.com.br/api/v1/pix/in/qrcode', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.API_SECRET}`,
-                'X-Account-Id': process.env.ACCOUNT_ID
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                amountInCents: 100000,
+                amountInCents: 100000, // R$ 1.000,00
                 description: "Pagamento - Marcos Ferraz",
                 customer: {
-                    name: "Marcos Gonçalo Medeiros Ferraz"
+                    name: "Marcos Gonçalo Medeiros Ferraz",
+                    email: "marcos.ferraz@email.com",
+                    documentType: "cpf",
+                    document: "11122233344"
                 }
             })
         });
 
-        const result = await response.json();
+        const result = await pixResponse.json();
         res.json(result);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
