@@ -15,7 +15,7 @@ app.post('/api/criar-pix', async (req, res) => {
             return res.status(500).json({ success: false, message: "Credenciais em falta nas variáveis de ambiente." });
         }
 
-        // 1. Gerar o token de acesso via Basic Auth (conforme documentação da Quantum Pay)
+        // 1. Gerar o token de acesso via Basic Auth (conforme documentação)
         const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
         
         const authResponse = await fetch('https://api.quantumpay.com.br/api/auth', {
@@ -27,11 +27,17 @@ app.post('/api/criar-pix', async (req, res) => {
         });
 
         const authData = await authResponse.json();
-        const token = authData.token || authData.accessToken || authData.data?.token || authData.data?.accessToken;
 
-        if (!token) {
-            return res.status(400).json({ success: false, message: "Falha na autenticação com a Quantum Pay", details: authData });
+        // Se a autenticação falhar, devolvemos a resposta exata da Quantum Pay para diagnóstico
+        if (!authResponse.ok || (!authData.token && !authData.accessToken && !authData.data?.token && !authData.data?.accessToken)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Falha na autenticação", 
+                detalhesQuantum: authData 
+            });
         }
+
+        const token = authData.token || authData.accessToken || authData.data?.token || authData.data?.accessToken;
 
         // 2. Criar a cobrança Pix utilizando o token obtido
         const pixResponse = await fetch('https://api.quantumpay.com.br/api/v1/pix/in/qrcode', {
