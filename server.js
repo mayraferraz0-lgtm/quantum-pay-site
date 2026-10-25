@@ -8,23 +8,23 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/api/criar-pix', async (req, res) => {
     try {
-        const response = await fetch('https://api.quantumpay.com.br/v1/transactions', {
+        const response = await fetch('https://api.quantumpay.com.br/api/v1/pix/in/qrcode', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.API_SECRET}`,
-                'X-Account-Id': process.env.ACCOUNT_ID
+                'Authorization': `Bearer ${process.env.API_SECRET}`
             },
             body: JSON.stringify({
-                amount: 100000,
-                currency: 'BRL',
-                paymentMethod: { type: 'PIX' },
-                customer: { name: 'Marcos Gonçalo Medeiros Ferraz' }
+                amountInCents: 100000, // R$ 1.000,00 em centavos
+                description: "Pagamento - Marcos Ferraz",
+                customer: {
+                    name: "Marcos Gonçalo Medeiros Ferraz"
+                }
             })
         });
 
-        const data = await response.json();
-        res.json(data);
+        const result = await response.json();
+        res.json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
