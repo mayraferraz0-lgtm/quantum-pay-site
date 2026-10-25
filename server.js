@@ -12,7 +12,8 @@ app.post('/api/criar-pix', async (req, res) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.API_SECRET}`
+                'Authorization': `Bearer ${process.env.API_SECRET}`,
+                'X-Account-Id': process.env.ACCOUNT_ID
             },
             body: JSON.stringify({
                 amountInCents: 100000,
