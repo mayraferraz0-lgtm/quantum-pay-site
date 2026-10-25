@@ -15,7 +15,7 @@ app.post('/api/criar-pix', async (req, res) => {
             return res.status(500).json({ success: false, message: "Credenciais em falta nas variáveis de ambiente." });
         }
 
-        // 1. Gerar o token de acesso via Basic Auth
+        // 1. Gerar o token de acesso via Basic Auth no endpoint oficial /api/auth[span_3](start_span)[span_3](end_span)
         const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
         
         const authResponse = await fetch('https://api.quantumpay.com.br/api/auth', {
@@ -28,18 +28,17 @@ app.post('/api/criar-pix', async (req, res) => {
         });
 
         const authData = await authResponse.json();
+        const token = authData.token || authData.accessToken || authData.data?.token || authData.data?.accessToken;
 
-        if (!authResponse.ok || (!authData.token && !authData.accessToken && !authData.data?.token && !authData.data?.accessToken)) {
+        if (!token) {
             return res.status(400).json({ 
                 success: false, 
-                message: "Falha na autenticação", 
-                detalhesQuantum: authData 
+                message: "Falha na autenticação com a Quantum Pay", 
+                detalhes: authData 
             });
         }
 
-        const token = authData.token || authData.accessToken || authData.data?.token || authData.data?.accessToken;
-
-        // 2. Criar a cobrança Pix com todos os campos obrigatórios do cliente (incluindo o telefone)
+        // 2. Criar a cobrança Pix utilizando o token obtido e os dados reais[span_4](start_span)[span_4](end_span)[span_5](start_span)[span_5](end_span)
         const pixResponse = await fetch('https://api.quantumpay.com.br/api/v1/pix/in/qrcode', {
             method: 'POST',
             headers: {
@@ -47,14 +46,14 @@ app.post('/api/criar-pix', async (req, res) => {
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                amountInCents: 100000, // R$ 1.000,00
+                amountInCents: 100000, // R$ 1.000,00[span_6](start_span)[span_6](end_span)
                 description: "Pagamento - Marcos Ferraz",
                 customer: {
                     name: "Marcos Gonçalo Medeiros Ferraz",
                     email: "marcos.ferraz@email.com",
                     documentType: "cpf",
-                    document: "11122233344",
-                    phone: "42999888877"
+                    document: "57884781972",
+                    phone: "42999675773"
                 }
             })
         });
