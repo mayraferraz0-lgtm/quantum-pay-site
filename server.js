@@ -15,7 +15,7 @@ app.post('/api/criar-pix', async (req, res) => {
             return res.status(500).json({ success: false, message: "Credenciais em falta nas variáveis de ambiente." });
         }
 
-        // 1. Gerar o token de acesso via Basic Auth no endpoint oficial /api/auth[span_3](start_span)[span_3](end_span)
+        // 1. Gerar o token de acesso via Basic Auth no endpoint oficial /api/auth[span_2](start_span)[span_2](end_span)
         const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
         
         const authResponse = await fetch('https://api.quantumpay.com.br/api/auth', {
@@ -24,7 +24,7 @@ app.post('/api/criar-pix', async (req, res) => {
                 'Authorization': `Basic ${credentials}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({})
+            body: JSON.stringify({}) // Corpo JSON vazio obrigatório para evitar o erro de Content-Type
         });
 
         const authData = await authResponse.json();
@@ -38,7 +38,7 @@ app.post('/api/criar-pix', async (req, res) => {
             });
         }
 
-        // 2. Criar a cobrança Pix utilizando o token obtido e os dados reais[span_4](start_span)[span_4](end_span)[span_5](start_span)[span_5](end_span)
+        // 2. Criar a cobrança Pix utilizando o token obtido e os dados validados[span_3](start_span)[span_3](end_span)[span_4](start_span)[span_4](end_span)
         const pixResponse = await fetch('https://api.quantumpay.com.br/api/v1/pix/in/qrcode', {
             method: 'POST',
             headers: {
@@ -46,7 +46,7 @@ app.post('/api/criar-pix', async (req, res) => {
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                amountInCents: 100000, // R$ 1.000,00[span_6](start_span)[span_6](end_span)
+                amountInCents: 5000, // R$ 50,00 para teste inicial (dentro do limite da conta)[span_5](start_span)[span_5](end_span)[span_6](start_span)[span_6](end_span)
                 description: "Pagamento - Marcos Ferraz",
                 customer: {
                     name: "Marcos Gonçalo Medeiros Ferraz",
