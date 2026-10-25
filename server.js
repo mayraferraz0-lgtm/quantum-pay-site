@@ -15,7 +15,7 @@ app.post('/api/criar-pix', async (req, res) => {
             return res.status(500).json({ success: false, message: "Credenciais em falta nas variáveis de ambiente." });
         }
 
-        // 1. Gerar o token de acesso via Basic Auth com o corpo JSON vazio exigido
+        // 1. Gerar o token de acesso via Basic Auth
         const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
         
         const authResponse = await fetch('https://api.quantumpay.com.br/api/auth', {
@@ -39,7 +39,7 @@ app.post('/api/criar-pix', async (req, res) => {
 
         const token = authData.token || authData.accessToken || authData.data?.token || authData.data?.accessToken;
 
-        // 2. Criar a cobrança Pix utilizando o token obtido
+        // 2. Criar a cobrança Pix com todos os campos obrigatórios do cliente (incluindo o telefone)
         const pixResponse = await fetch('https://api.quantumpay.com.br/api/v1/pix/in/qrcode', {
             method: 'POST',
             headers: {
@@ -53,7 +53,8 @@ app.post('/api/criar-pix', async (req, res) => {
                     name: "Marcos Gonçalo Medeiros Ferraz",
                     email: "marcos.ferraz@email.com",
                     documentType: "cpf",
-                    document: "11122233344"
+                    document: "11122233344",
+                    phone: "42999888877"
                 }
             })
         });
