@@ -1,6 +1,7 @@
 {
   "name": "quantum-pay-checkout",
   "version": "1.0.0",
+  "description": "Checkout Quantum Pay",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
