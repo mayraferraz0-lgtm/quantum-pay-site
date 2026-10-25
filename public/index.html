@@ -1,26 +1,26 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
-    <title>Checkout PIX - Teste QuantumPay</title>
+    <title>Checkout PIX - QuantumPay</title>
     <style>
         body { font-family: Arial, sans-serif; background: #121212; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #1e1e1e; padding: 30px; border-radius: 12px; width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .card { background: #1e1e1e; padding: 30px; border-radius: 12px; width: 350px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); box-sizing: border-box; }
         h2 { color: #ff6600; text-align: center; }
         label { display: block; margin-top: 10px; font-size: 14px; color: #aaa; }
         input { width: 100%; padding: 10px; margin-top: 5px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 6px; box-sizing: border-box; }
         button { width: 100%; background: #ff6600; color: #fff; border: none; padding: 12px; margin-top: 20px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; }
         button:hover { background: #e55b00; }
         #qr-container { display: none; text-align: center; margin-top: 20px; }
-        #qr-container img { width: 220px; border-radius: 8px; background: #fff; padding: 10px; }
-        .copia-cola { font-size: 11px; word-break: break-all; background: #2a2a2a; padding: 8px; border-radius: 4px; margin-top: 10px; }
+        #qr-container img { width: 200px; border-radius: 8px; background: #fff; padding: 10px; }
+        .copia-cola { font-size: 10px; word-break: break-all; background: #2a2a2a; padding: 8px; border-radius: 4px; margin-top: 10px; max-height: 80px; overflow-y: auto; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h2>Checkout QuantumPay</h2>
-    
+
     <div id="form-container">
         <label>Nome do Cliente</label>
         <input type="text" id="nome" value="Cliente Exemplo Silva">
@@ -37,7 +37,7 @@
         <label>Valor (R$)</label>
         <input type="number" id="valor" value="10.00" step="0.01">
 
-        <button onclick="gerarPix()">Gerar PIX de Teste</button>
+        <button onclick="gerarPix()">Gerar PIX</button>
     </div>
 
     <div id="qr-container">
@@ -60,7 +60,7 @@ async function gerarPix() {
 
     const dadosPagamento = {
         amountInCents,
-        description: "Teste de Pagamento PIX",
+        description: "Pagamento de Serviços",
         customer: { name: nome, email, document: documento, phone: telefone }
     };
 
@@ -74,14 +74,12 @@ async function gerarPix() {
         const resultado = await resposta.json();
 
         if (resultado.success) {
-            // Exibir dados do PIX conforme a documentação
             document.getElementById('form-container').style.display = 'none';
             document.getElementById('qr-container').style.display = 'block';
-            
+
             document.getElementById('qr-img').src = resultado.data.pix.qrCode;
             document.getElementById('pix-emv').innerText = resultado.data.pix.emv;
 
-            // Iniciar o Polling de verificação de status a cada 3 segundos[span_6](start_span)[span_6](end_span)
             iniciarPolling(resultado.data.id);
         } else {
             alert('Erro ao gerar PIX: ' + (resultado.message || 'Erro desconhecido'));
@@ -98,7 +96,6 @@ function iniciarPolling(transactionId) {
             const resposta = await fetch(`/api/transacao/${transactionId}`);
             const data = await resposta.json();
 
-            // Verificar se o status mudou para pago ('paid')[span_7](start_span)[span_7](end_span)
             if (data.status === 'paid') {
                 clearInterval(intervalo);
                 document.getElementById('status-pagamento').style.color = '#00ff00';
@@ -107,7 +104,7 @@ function iniciarPolling(transactionId) {
         } catch (erro) {
             console.error('Erro no polling:', erro);
         }
-    }, 3000); // Executa a cada 3 segundos conforme a documentação[span_8](start_span)[span_8](end_span)
+    }, 3000);
 }
 </script>
 
