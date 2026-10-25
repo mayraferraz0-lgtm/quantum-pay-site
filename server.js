@@ -1,6 +1,5 @@
 const express = require('express');
 const axios = require('axios');
-const path = require('path');
 
 const app = express();
 app.use(express.json());
@@ -13,22 +12,19 @@ const QUANTUMPAY_API_URL = 'https://api.quantumpay.com.br';
 const CLIENT_ID = process.env.QUANTUMPAY_CLIENT_ID || 'cmvmzvh8t000ol3q6m0c530a0';
 const CLIENT_SECRET = process.env.QUANTUMPAY_CLIENT_SECRET || '2ed27d1cc3ed43fa53a30c5c846ff265fa2c203b8b8ab1d323fea619705aa8043481832eb7db5c82cc555207dd2e6d1176c78855135112afd9e4190c6d38dc6fd188c3ce792421b62283f9c482d3155a4bd06ad4310170a5c88c9e10aa2ecb0c80776fad81584d63cc55da1fa688664a73cf771d08a4bf13c338fb5439cfd68c';
 
-// Variáveis em memória para controle e cache do Token (evita expiração)
+// Cache do Token
 let cachedToken = null;
 let tokenExpirationTime = 0;
 
-/**
- * Função para garantir token válido com cache e margem de segurança de 5 minutos.
- */
 async function getValidToken() {
   const currentTime = Date.now();
-  const bufferTime = 5 * 60 * 1000; // 5 minutos
+  const bufferTime = 5 * 60 * 1000; // 5 minutos de margem
 
   if (cachedToken && (currentTime + bufferTime) < tokenExpirationTime) {
     return cachedToken;
   }
 
-  console.log('🔄 Token expirado ou inexistente. Gerando novo token Quantum Pay...');
+  console.log('🔄 Gerando novo token Quantum Pay...');
 
   try {
     const response = await axios.post(`${QUANTUMPAY_API_URL}/auth/token`, {
@@ -40,23 +36,20 @@ async function getValidToken() {
     const expiresIn = response.data.expires_in || 3600; 
     tokenExpirationTime = Date.now() + (expiresIn * 1000);
 
-    console.log('✅ Novo token gerado com sucesso!');
+    console.log('✅ Token gerado com sucesso!');
     return cachedToken;
   } catch (error) {
-    console.error('❌ Erro ao autenticar na Quantum Pay:', error.response?.data || error.message);
+    console.error('❌ Erro de autenticação Quantum Pay:', error.response?.data || error.message);
     throw new Error('Falha na autenticação com o gateway de pagamento.');
   }
 }
 
-// Rota de Backend para Criar a Cobrança PIX IN
+// Rota para criar QR Code Pix
 app.post('/api/v1/pix/in/qrcode', async (req, res) => {
   try {
     const { amountInCents, description, customer } = req.body;
-    
-    // 1. Obtém o token válido (gerencia cache e renovação automática)
     const token = await getValidToken();
 
-    // 2. Executa a requisição oficial para a Quantum Pay
     const response = await axios.post(`${QUANTUMPAY_API_URL}/api/v1/pix/in/qrcode`, {
       amountInCents,
       description,
@@ -82,7 +75,7 @@ app.post('/api/v1/pix/in/qrcode', async (req, res) => {
   }
 });
 
-// Interface Frontend integrada (Dark Mode com Tailwind CSS)
+// Interface de Checkout (Frontend)
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -138,11 +131,10 @@ app.get('/', (req, res) => {
 
         <div id="resultArea" class="hidden mt-6 text-center space-y-4">
           <div class="p-3 bg-slate-900 rounded-lg border border-slate-700">
-            <p class="text-xs text-slate-400">Escaneie o QR Code ou copie o código Pix:</p>
-            <div id="qrCodeContainer" class="my-3 flex justify-center"></div>
-            <textarea id="pixCopyPaste" readonly class="w-full h-20 bg-slate-950 text-xs text-emerald-400 p-2 rounded border border-slate-800 resize-none"></textarea>
+            <p class="text-xs text-slate-400">Pix Copia e Cola:</p>
+            <textarea id="pixCopyPaste" readonly class="w-full h-24 bg-slate-950 text-xs text-emerald-400 p-2 rounded border border-slate-800 resize-none mt-2"></textarea>
           </div>
-          <button onclick="location.reload()" class="text-xs text-slate-400 hover:text-slate-200 underline">Gerar Nova Cobrança</button>
+          <button onclick="location.reload()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold py-2 rounded-lg transition duration-200">Gerar Nova Cobrança</button>
         </div>
       </div>
 
@@ -176,13 +168,8 @@ app.get('/', (req, res) => {
               document.getElementById('checkoutForm').classList.add('hidden');
               document.getElementById('resultArea').classList.remove('hidden');
               
-              // Preenche com o payload retornado (ajuste conforme o JSON exato retornado pela Quantum Pay)
-              const qrData = data.data.qrCode || data.data.pixCopyPaste || JSON.stringify(data.data, null, 2);
+              const qrData = data.data.qrCode || data.data.pixCopyPaste || data.data.emv || JSON.stringify(data.data, null, 2);
               document.getElementById('pixCopyPaste').value = qrData;
-              
-              if(data.data.qrCodeBase64) {
-                document.getElementById('qrCodeContainer').innerHTML = '<img src="data:image/png;base64,' + data.data.qrCodeBase64 + '" class="w-48 h-48 mx-auto rounded shadow" />';
-              }
             } else {
               alert('Erro: ' + (data.message || 'Falha ao gerar cobrança'));
               btn.disabled = false;
@@ -201,5 +188,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(\`🚀 Servidor rodando na porta \${PORT}\`);
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
